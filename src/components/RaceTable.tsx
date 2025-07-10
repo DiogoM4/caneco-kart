@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Crown, Zap, Edit3, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,8 +25,7 @@ const RaceTable = ({ race }: RaceTableProps) => {
   const [editedFastestLap, setEditedFastestLap] = useState(race.fastestLap || '');
 
   const handleSave = () => {
-    updateRace({
-      ...race,
+    updateRace(race.id, {
       results: editedResults,
       polePosition: editedPolePosition,
       fastestLap: editedFastestLap,
