@@ -7,11 +7,18 @@ import KartTrack from '@/components/KartTrack';
 import { useKartStore } from '@/store/kartStore';
 
 const Index = () => {
+  console.log('Index component rendering');
+  
   const navigate = useNavigate();
+  console.log('useNavigate called successfully');
+  
   const { pilots, races, calculateTotalPoints } = useKartStore();
+  console.log('Store data:', { pilots: pilots.length, races: races.length });
+  
   const [rankings, setRankings] = useState([]);
 
   useEffect(() => {
+    console.log('Calculating rankings...');
     const pilotsWithPoints = pilots.map(pilot => ({
       ...pilot,
       totalPoints: calculateTotalPoints(pilot.id)
@@ -19,6 +26,7 @@ const Index = () => {
     
     const sortedRankings = pilotsWithPoints.sort((a, b) => b.totalPoints - a.totalPoints);
     setRankings(sortedRankings);
+    console.log('Rankings calculated:', sortedRankings);
   }, [pilots, races, calculateTotalPoints]);
 
   return (

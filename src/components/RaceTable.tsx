@@ -1,77 +1,130 @@
 
 import { useState } from 'react';
-import { Trophy, Zap, Edit3, Save, X } from 'lucide-react';
+import { Crown, Zap, Edit3, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useKartStore } from '@/store/kartStore';
-import type { Race } from '@/store/kartStore';
 
 interface RaceTableProps {
-  race: Race;
+  race: {
+    id: string;
+    date: string;
+    results: Array<{
+      pilotId: string;
+      position: number;
+    }>;
+    polePosition?: string;
+    fastestLap?: string;
+  };
 }
 
-const RaceTable: React.FC<RaceTableProps> = ({ race }) => {
-  const { pilots, updateRace, deleteRace, calculatePointsForRace } = useKartStore();
+const RaceTable = ({ race }: RaceTableProps) => {
+  const { pilots, updateRace } = useKartStore();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedRace, setEditedRace] = useState<Race>(race);
+  const [editedResults, setEditedResults] = useState(race.results);
+  const [editedPolePosition, setEditedPolePosition] = useState(race.polePosition || '');
+  const [editedFastestLap, setEditedFastestLap] = useState(race.fastestLap || '');
 
   const handleSave = () => {
-    updateRace(race.id, editedRace);
+    updateRace({
+      ...race,
+      results: editedResults,
+      polePosition: editedPolePosition,
+      fastestLap: editedFastestLap,
+    });
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setEditedRace(race);
+    setEditedResults(race.results);
+    setEditedPolePosition(race.polePosition || '');
+    setEditedFastestLap(race.fastestLap || '');
     setIsEditing(false);
   };
 
-  const updatePosition = (pilotId: string, position: number) => {
-    const newResults = editedRace.results.map(result =>
-      result.pilotId === pilotId ? { ...result, position } : result
-    );
-    setEditedRace({ ...editedRace, results: newResults });
+  const updatePosition = (pilotId: string, newPosition: number) => {
+    // Find if another pilot already has this position
+    const existingPilot = editedResults.find(r => r.position === newPosition);
+    const currentPilot = editedResults.find(r => r.pilotId === pilotId);
+    
+    if (existingPilot && currentPilot) {
+      // Swap positions
+      const newResults = editedResults.map(result => {
+        if (result.pilotId === pilotId) {
+          return { ...result, position: newPosition };
+        }
+        if (result.pilotId === existingPilot.pilotId) {
+          return { ...result, position: currentPilot.position };
+        }
+        return result;
+      });
+      setEditedResults(newResults);
+    }
   };
 
-  const setPolePosition = (pilotId: string) => {
-    setEditedRace({ 
-      ...editedRace, 
-      polePosition: editedRace.polePosition === pilotId ? undefined : pilotId 
-    });
-  };
-
-  const setFastestLap = (pilotId: string) => {
-    setEditedRace({ 
-      ...editedRace, 
-      fastestLap: editedRace.fastestLap === pilotId ? undefined : pilotId 
-    });
-  };
-
-  const sortedResults = [...(isEditing ? editedRace.results : race.results)]
-    .sort((a, b) => a.position - b.position);
+  const sortedResults = [...editedResults].sort((a, b) => a.position - b.position);
 
   return (
     <div className="space-y-4">
-      {/* Controls */}
-      <div className="flex justify-between items-center">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Crown className="h-4 w-4 text-yellow-400" />
+            <span className="text-white/70 text-sm">Pole Position:</span>
+            {isEditing ? (
+              <Select value={editedPolePosition} onValueChange={setEditedPolePosition}>
+                <SelectTrigger className="w-32 bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Selecionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {pilots.map(pilot => (
+                    <SelectItem key={pilot.id} value={pilot.id}>
+                      {pilot.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className="text-white font-medium">
+                {editedPolePosition ? pilots.find(p => p.id === editedPolePosition)?.name : 'N/A'}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-purple-400" />
+            <span className="text-white/70 text-sm">Melhor Volta:</span>
+            {isEditing ? (
+              <Select value={editedFastestLap} onValueChange={setEditedFastestLap}>
+                <SelectTrigger className="w-32 bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Selecionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {pilots.map(pilot => (
+                    <SelectItem key={pilot.id} value={pilot.id}>
+                      {pilot.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className="text-white font-medium">
+                {editedFastestLap ? pilots.find(p => p.id === editedFastestLap)?.name : 'N/A'}
+              </span>
+            )}
+          </div>
+        </div>
+        
         <div className="flex gap-2">
-          {!isEditing ? (
-            <Button 
-              onClick={() => setIsEditing(true)}
-              variant="outline"
-              size="sm"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-            >
-              <Edit3 className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
-          ) : (
-            <div className="flex gap-2">
+          {isEditing ? (
+            <>
               <Button 
                 onClick={handleSave}
                 size="sm"
-                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                className="bg-green-500 hover:bg-green-600"
               >
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4 mr-1" />
                 Salvar
               </Button>
               <Button 
@@ -80,123 +133,118 @@ const RaceTable: React.FC<RaceTableProps> = ({ race }) => {
                 size="sm"
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
-                <X className="h-4 w-4 mr-2" />
+                <X className="h-4 w-4 mr-1" />
                 Cancelar
               </Button>
-            </div>
+            </>
+          ) : (
+            <Button 
+              onClick={() => setIsEditing(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
+              <Edit3 className="h-4 w-4 mr-1" />
+              Editar
+            </Button>
           )}
         </div>
-        
-        <Button 
-          onClick={() => deleteRace(race.id)}
-          variant="destructive"
-          size="sm"
-          className="bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30"
-        >
-          Excluir Corrida
-        </Button>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-white/20">
-              <th className="text-left py-3 px-2 text-white/70 font-medium">Pos</th>
-              <th className="text-left py-3 px-2 text-white/70 font-medium">Piloto</th>
-              <th className="text-center py-3 px-2 text-white/70 font-medium">
-                <Trophy className="h-4 w-4 mx-auto" title="Pole Position" />
-              </th>
-              <th className="text-center py-3 px-2 text-white/70 font-medium">
-                <Zap className="h-4 w-4 mx-auto" title="Melhor Volta" />
-              </th>
-              <th className="text-right py-3 px-2 text-white/70 font-medium">Pontos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedResults.map((result) => {
-              const pilot = pilots.find(p => p.id === result.pilotId);
-              if (!pilot) return null;
-              
-              const points = calculatePointsForRace(isEditing ? editedRace : race, pilot.id);
-              const isPole = (isEditing ? editedRace.polePosition : race.polePosition) === pilot.id;
-              const isFastest = (isEditing ? editedRace.fastestLap : race.fastestLap) === pilot.id;
-
-              return (
-                <tr key={pilot.id} className="border-b border-white/10 hover:bg-white/5">
-                  <td className="py-3 px-2">
-                    {isEditing ? (
-                      <Select 
-                        value={result.position.toString()} 
-                        onValueChange={(value) => updatePosition(pilot.id, parseInt(value))}
-                      >
-                        <SelectTrigger className="w-16 h-8 bg-white/10 border-white/20 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1,2,3,4,5,6,7,8,9,10].map(pos => (
-                            <SelectItem key={pos} value={pos.toString()}>
-                              {pos}º
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <span className="text-white font-bold">{result.position}º</span>
+      {/* Results Table */}
+      <div className="bg-white/5 rounded-lg p-4">
+        <div className="grid grid-cols-3 gap-4 text-white/70 text-sm font-medium mb-3 pb-2 border-b border-white/10">
+          <span>Posição</span>
+          <span>Piloto</span>
+          <span>Pontos</span>
+        </div>
+        
+        <div className="space-y-2">
+          {sortedResults.map((result) => {
+            const pilot = pilots.find(p => p.id === result.pilotId);
+            const points = calculatePoints(result.position, result.pilotId === editedPolePosition, result.pilotId === editedFastestLap);
+            
+            return (
+              <div key={result.pilotId} className="grid grid-cols-3 gap-4 items-center py-2">
+                <div className="flex items-center gap-2">
+                  {isEditing ? (
+                    <Select 
+                      value={result.position.toString()} 
+                      onValueChange={(value) => updatePosition(result.pilotId, parseInt(value))}
+                    >
+                      <SelectTrigger className="w-16 bg-white/10 border-white/20 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 10 }, (_, i) => i + 1).map(pos => (
+                          <SelectItem key={pos} value={pos.toString()}>
+                            {pos}º
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="text-white font-bold text-lg w-8">
+                      {result.position}º
+                    </span>
+                  )}
+                  {result.position <= 3 && (
+                    <div className={`w-2 h-2 rounded-full ${
+                      result.position === 1 ? 'bg-yellow-400' :
+                      result.position === 2 ? 'bg-gray-400' :
+                      'bg-orange-400'
+                    }`} />
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded-full" 
+                    style={{ backgroundColor: pilot?.color }}
+                  />
+                  <span className="text-white font-medium">{pilot?.name}</span>
+                  <div className="flex gap-1">
+                    {result.pilotId === editedPolePosition && (
+                      <Crown className="h-3 w-3 text-yellow-400" />
                     )}
-                  </td>
-                  
-                  <td className="py-3 px-2">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-4 h-4 rounded-full border border-white/30"
-                        style={{ backgroundColor: pilot.color }}
-                      ></div>
-                      <span className="text-white">{pilot.name}</span>
-                    </div>
-                  </td>
-                  
-                  <td className="py-3 px-2 text-center">
-                    {isEditing ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setPolePosition(pilot.id)}
-                        className={`h-8 w-8 p-0 ${isPole ? 'bg-yellow-500/20 text-yellow-400' : 'text-white/30 hover:text-white/60'}`}
-                      >
-                        <Trophy className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      isPole && <Trophy className="h-4 w-4 text-yellow-400 mx-auto" />
+                    {result.pilotId === editedFastestLap && (
+                      <Zap className="h-3 w-3 text-purple-400" />
                     )}
-                  </td>
-                  
-                  <td className="py-3 px-2 text-center">
-                    {isEditing ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setFastestLap(pilot.id)}
-                        className={`h-8 w-8 p-0 ${isFastest ? 'bg-purple-500/20 text-purple-400' : 'text-white/30 hover:text-white/60'}`}
-                      >
-                        <Zap className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      isFastest && <Zap className="h-4 w-4 text-purple-400 mx-auto" />
-                    )}
-                  </td>
-                  
-                  <td className="py-3 px-2 text-right">
-                    <span className="text-white font-bold">{points}</span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+                
+                <span className="text-white font-bold">
+                  {points} pts
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
+};
+
+// Helper function to calculate points
+const calculatePoints = (position: number, hasPole: boolean, hasFastestLap: boolean) => {
+  const positionPoints = {
+    1: 10,
+    2: 8,
+    3: 6,
+    4: 5,
+    5: 4,
+    6: 3,
+    7: 2,
+    8: 1,
+    9: 0,
+    10: 0,
+  };
+  
+  let points = positionPoints[position as keyof typeof positionPoints] || 0;
+  if (hasPole) points += 1;
+  if (hasFastestLap) points += 1;
+  
+  return points;
 };
 
 export default RaceTable;
