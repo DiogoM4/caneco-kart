@@ -1,36 +1,34 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Flag, BarChart3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import KartTrack from '@/components/KartTrack';
 import { useKartStore } from '@/store/kartStore';
-
 const Index = () => {
   console.log('Index component rendering');
-  
   const navigate = useNavigate();
   console.log('useNavigate called successfully');
-  
-  const { pilots, races, calculateTotalPoints } = useKartStore();
-  console.log('Store data:', { pilots: pilots.length, races: races.length });
-  
+  const {
+    pilots,
+    races,
+    calculateTotalPoints
+  } = useKartStore();
+  console.log('Store data:', {
+    pilots: pilots.length,
+    races: races.length
+  });
   const [rankings, setRankings] = useState([]);
-
   useEffect(() => {
     console.log('Calculating rankings...');
     const pilotsWithPoints = pilots.map(pilot => ({
       ...pilot,
       totalPoints: calculateTotalPoints(pilot.id)
     }));
-    
     const sortedRankings = pilotsWithPoints.sort((a, b) => b.totalPoints - a.totalPoints);
     setRankings(sortedRankings);
     console.log('Rankings calculated:', sortedRankings);
   }, [pilots, races, calculateTotalPoints]);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+  return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       {/* Header */}
       <header className="bg-black/20 backdrop-blur-sm border-b border-white/10">
         <div className="container mx-auto px-4 py-6">
@@ -40,24 +38,17 @@ const Index = () => {
                 <Flag className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Championship Kart</h1>
-                <p className="text-blue-200">Temporada 2024</p>
+                <h1 className="text-2xl font-bold text-white">Campeonato de Kart</h1>
+                <p className="text-blue-200">Temporada 2025</p>
               </div>
             </div>
             
             <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/results')}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
+              <Button variant="outline" onClick={() => navigate('/results')} className="bg-white/10 border-white/20 text-white hover:bg-white/20">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Resultados
               </Button>
-              <Button 
-                onClick={() => navigate('/results')}
-                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-              >
+              <Button onClick={() => navigate('/results')} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600">
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Corrida
               </Button>
@@ -110,24 +101,15 @@ const Index = () => {
             <h2 className="text-2xl font-bold text-white">Ranking do Campeonato</h2>
           </div>
           
-          {rankings.length > 0 ? (
-            <KartTrack rankings={rankings} />
-          ) : (
-            <div className="text-center py-12">
+          {rankings.length > 0 ? <KartTrack rankings={rankings} /> : <div className="text-center py-12">
               <Flag className="h-12 w-12 text-white/30 mx-auto mb-4" />
               <p className="text-white/70 text-lg mb-4">Nenhuma corrida registrada ainda</p>
-              <Button 
-                onClick={() => navigate('/results')}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-              >
+              <Button onClick={() => navigate('/results')} className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
                 Registrar Primeira Corrida
               </Button>
-            </div>
-          )}
+            </div>}
         </div>
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
