@@ -54,10 +54,6 @@ const Index = () => {
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Resultados
               </Button>
-              <Button onClick={() => navigate('/results')} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Corrida
-              </Button>
             </div>
           </div>
         </div>
@@ -110,9 +106,7 @@ const Index = () => {
           {rankings.length > 0 ? <KartTrack rankings={rankings} /> : <div className="text-center py-12">
               <Flag className="h-12 w-12 text-white/30 mx-auto mb-4" />
               <p className="text-white/70 text-lg mb-4">Nenhuma corrida registrada ainda</p>
-              <Button onClick={() => navigate('/results')} className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
-                Registrar Primeira Corrida
-              </Button>
+              <p className="text-white/50">Aguarde as corridas serem adicionadas pelo administrador</p>
             </div>}
         </div>
       </main>
