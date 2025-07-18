@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Crown, Zap, Edit3, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useKartStore } from '@/store/kartStore';
+import { useSupabaseKartStore } from '@/store/supabaseKartStore';
 
 interface RaceTableProps {
   race: {
@@ -18,7 +18,7 @@ interface RaceTableProps {
 }
 
 const RaceTable = ({ race }: RaceTableProps) => {
-  const { pilots, updateRace } = useKartStore();
+  const { pilots, updateRace } = useSupabaseKartStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedResults, setEditedResults] = useState(race.results);
   const [editedPolePosition, setEditedPolePosition] = useState(race.polePosition || '');

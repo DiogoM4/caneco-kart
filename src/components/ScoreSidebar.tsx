@@ -1,10 +1,10 @@
 
 import { Trophy, Medal, Award, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useKartStore } from '@/store/kartStore';
+import { useSupabaseKartStore } from '@/store/supabaseKartStore';
 
 const ScoreSidebar = () => {
-  const { pilots, calculateTotalPoints } = useKartStore();
+  const { pilots, calculateTotalPoints } = useSupabaseKartStore();
 
   const pilotsWithPoints = pilots.map(pilot => ({
     ...pilot,

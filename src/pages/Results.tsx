@@ -1,18 +1,18 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Edit3, Trash2, Trophy, Zap, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useKartStore } from '@/store/kartStore';
+import { useSupabaseKartStore } from '@/store/supabaseKartStore';
 import RaceTable from '@/components/RaceTable';
 import ScoreSidebar from '@/components/ScoreSidebar';
 
 const Results = () => {
   const navigate = useNavigate();
-  const { races, pilots, addRace } = useKartStore();
+  const { races, pilots, addRace, loadData, loading } = useSupabaseKartStore();
   const [showNewRaceForm, setShowNewRaceForm] = useState(false);
   const [newRaceDate, setNewRaceDate] = useState('');
 
@@ -45,6 +45,10 @@ const Results = () => {
   };
 
   const suggestedDates = generateSuggestedDates();
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">

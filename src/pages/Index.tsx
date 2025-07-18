@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, Flag, BarChart3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import KartTrack from '@/components/KartTrack';
-import { useKartStore } from '@/store/kartStore';
+import { useSupabaseKartStore } from '@/store/supabaseKartStore';
 const Index = () => {
   console.log('Index component rendering');
   const navigate = useNavigate();
@@ -11,13 +11,19 @@ const Index = () => {
   const {
     pilots,
     races,
-    calculateTotalPoints
-  } = useKartStore();
+    calculateTotalPoints,
+    loadData,
+    loading
+  } = useSupabaseKartStore();
   console.log('Store data:', {
     pilots: pilots.length,
     races: races.length
   });
   const [rankings, setRankings] = useState([]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   useEffect(() => {
     console.log('Calculating rankings...');
     const pilotsWithPoints = pilots.map(pilot => ({
