@@ -42,6 +42,7 @@ const Admin = () => {
   // Gerenciar Pilotos State
   const [editingPilots, setEditingPilots] = useState({});
   const [newPilotName, setNewPilotName] = useState('');
+  const [isEditingRace, setIsEditingRace] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -233,6 +234,26 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteRace = async (raceId: string) => {
+    if (window.confirm('Tem certeza que deseja deletar esta corrida?')) {
+      try {
+        await deleteRace(raceId);
+        toast({
+          title: 'Sucesso',
+          description: 'Corrida deletada com sucesso!',
+        });
+        setSelectedRaceId('');
+        await loadData();
+      } catch (error) {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível deletar a corrida.',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       {/* Header */}
@@ -321,24 +342,43 @@ const Admin = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="block text-white/70 text-sm mb-2">Selecionar Corrida</label>
-              <Select value={selectedRaceId} onValueChange={setSelectedRaceId}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                  <SelectValue placeholder="Escolha uma corrida" />
-                </SelectTrigger>
-                <SelectContent>
-                  {races.map((race) => (
-                    <SelectItem key={race.id} value={race.id}>
-                      {new Date(race.date).toLocaleDateString('pt-BR')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="block text-white/70 text-sm mb-2">Selecionar Corrida</label>
+                <Select value={selectedRaceId} onValueChange={setSelectedRaceId}>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Escolha uma corrida" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {races.map((race) => (
+                      <SelectItem key={race.id} value={race.id}>
+                        {new Date(race.date).toLocaleDateString('pt-BR')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedRaceId && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDeleteRace(selectedRaceId)}
+                  disabled={loading}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Deletar
+                </Button>
+              )}
             </div>
 
             {selectedRaceId && (
               <>
+                <div className="flex justify-end mb-4">
+                  <Button onClick={() => setIsEditingRace(!isEditingRace)}>
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    {isEditingRace ? 'Cancelar Edição' : 'Editar Resultados'}
+                  </Button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pilots.map((pilot) => (
                     <div key={pilot.id} className="bg-white/5 rounded-lg p-4 border border-white/10">

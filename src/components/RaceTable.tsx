@@ -64,7 +64,10 @@ const RaceTable = ({
       setEditedResults(newResults);
     }
   };
-  const sortedResults = [...editedResults].sort((a, b) => a.position - b.position);
+
+  // Remove duplicates and keep the best position for each pilot
+  const uniqueResults = Array.from(new Map(editedResults.map(item => [item.pilotId, item])).values());
+  const sortedResults = [...uniqueResults].sort((a, b) => a.position - b.position);
   return <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -118,6 +121,7 @@ const RaceTable = ({
         <div className="space-y-2">
           {sortedResults.map(result => {
           const pilot = pilots.find(p => p.id === result.pilotId);
+          if (!pilot) return null; // Added for safety
           const points = calculatePoints(result.position, result.pilotId === editedPolePosition, result.pilotId === editedFastestLap);
           return <div key={result.pilotId} className="grid grid-cols-3 gap-4 items-center py-2">
                 <div className="flex items-center gap-2">
