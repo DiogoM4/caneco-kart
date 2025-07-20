@@ -12,6 +12,9 @@ interface SupabaseKartStore {
   addRace: (race: Omit<Race, 'id'>) => Promise<void>;
   updateRace: (raceId: string, race: Partial<Race>) => Promise<void>;
   deleteRace: (raceId: string) => Promise<void>;
+  addPilot: (name: string) => Promise<void>;
+  updatePilot: (oldName: string, newName: string) => Promise<void>;
+  deletePilot: (name: string) => Promise<void>;
   calculateTotalPoints: (pilotId: string) => number;
   calculatePointsForRace: (race: Race, pilotId: string) => number;
 }
@@ -35,22 +38,14 @@ const BONUS_POINTS = {
   fastestLap: 1,
 };
 
-// Default pilots - mesmo do kartStore original
-const DEFAULT_PILOTS: Pilot[] = [
-  { id: '1', name: 'Carlos Silva', color: '#ef4444' },
-  { id: '2', name: 'Ana Costa', color: '#3b82f6' },
-  { id: '3', name: 'João Santos', color: '#10b981' },
-  { id: '4', name: 'Maria Oliveira', color: '#f59e0b' },
-  { id: '5', name: 'Pedro Lima', color: '#8b5cf6' },
-  { id: '6', name: 'Sofia Mendes', color: '#ec4899' },
-  { id: '7', name: 'Lucas Rocha', color: '#06b6d4' },
-  { id: '8', name: 'Beatriz Alves', color: '#84cc16' },
-  { id: '9', name: 'Diego Ferreira', color: '#f97316' },
-  { id: '10', name: 'Camila Souza', color: '#6366f1' },
+// Default colors para pilotos
+const DEFAULT_COLORS = [
+  '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6',
+  '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
 ];
 
 export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
-  pilots: DEFAULT_PILOTS,
+  pilots: [],
   races: [],
   loading: false,
 
@@ -58,6 +53,21 @@ export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
     set({ loading: true });
     
     try {
+      // Carregar pilotos do ranking_geral
+      const { data: rankingData, error: rankingError } = await supabase
+        .from('ranking_geral')
+        .select('*')
+        .order('total_pontos', { ascending: false });
+
+      if (rankingError) throw rankingError;
+
+      // Converter para formato Pilot
+      const pilots: Pilot[] = rankingData?.map((pilot, index) => ({
+        id: pilot.id.toString(),
+        name: pilot.piloto_nome,
+        color: DEFAULT_COLORS[index % DEFAULT_COLORS.length] || '#6366f1',
+      })) || [];
+
       // Carregar corridas
       const { data: corridas, error: corridasError } = await supabase
         .from('corridas')
@@ -80,7 +90,7 @@ export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
 
         // Converter resultados para o formato do Race
         const results: RaceResult[] = resultados?.map(resultado => ({
-          pilotId: DEFAULT_PILOTS.find(p => p.name === resultado.piloto_nome)?.id || '',
+          pilotId: pilots.find(p => p.name === resultado.piloto_nome)?.id || '',
           position: resultado.colocacao,
         })) || [];
 
@@ -92,14 +102,14 @@ export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
           id: corrida.id.toString(),
           date: corrida.data,
           results,
-          polePosition: DEFAULT_PILOTS.find(p => p.name === polePosition)?.id,
-          fastestLap: DEFAULT_PILOTS.find(p => p.name === fastestLap)?.id,
+          polePosition: pilots.find(p => p.name === polePosition)?.id,
+          fastestLap: pilots.find(p => p.name === fastestLap)?.id,
         };
 
         races.push(race);
       }
 
-      set({ races, loading: false });
+      set({ pilots, races, loading: false });
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       set({ loading: false });
@@ -127,7 +137,7 @@ export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
 
       // 2. Inserir resultados
       const resultadosToInsert = race.results.map(result => {
-        const pilot = DEFAULT_PILOTS.find(p => p.id === result.pilotId);
+        const pilot = get().pilots.find(p => p.id === result.pilotId);
         const pontos = get().calculatePointsForRace({ ...race, id: corridaId.toString() }, result.pilotId);
         
         return {
@@ -147,7 +157,7 @@ export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
       if (resultadosError) throw resultadosError;
 
       // 3. Atualizar ranking geral
-      for (const pilot of DEFAULT_PILOTS) {
+      for (const pilot of get().pilots) {
         const totalPoints = get().calculateTotalPoints(pilot.id) + 
           get().calculatePointsForRace({ ...race, id: corridaId.toString() }, pilot.id);
 
@@ -200,7 +210,7 @@ export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
 
         // Inserir novos resultados
         const resultadosToInsert = updatedRace.results.map(result => {
-          const pilot = DEFAULT_PILOTS.find(p => p.id === result.pilotId);
+          const pilot = get().pilots.find(p => p.id === result.pilotId);
           const currentRace = get().races.find(r => r.id === raceId);
           const raceData = { ...currentRace, ...updatedRace } as Race;
           const pontos = get().calculatePointsForRace(raceData, result.pilotId);
@@ -222,7 +232,7 @@ export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
         if (resultadosError) throw resultadosError;
 
         // Recalcular ranking geral
-        for (const pilot of DEFAULT_PILOTS) {
+        for (const pilot of get().pilots) {
           const totalPoints = get().calculateTotalPoints(pilot.id);
 
           const { error: rankingError } = await supabase
@@ -259,7 +269,7 @@ export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
       if (error) throw error;
 
       // Recalcular ranking geral
-      for (const pilot of DEFAULT_PILOTS) {
+      for (const pilot of get().pilots) {
         const totalPoints = get().calculateTotalPoints(pilot.id);
 
         const { error: rankingError } = await supabase
@@ -277,6 +287,83 @@ export const useSupabaseKartStore = create<SupabaseKartStore>((set, get) => ({
     } catch (error) {
       console.error('Erro ao deletar corrida:', error);
       set({ loading: false });
+    }
+  },
+
+  addPilot: async (name: string) => {
+    set({ loading: true });
+    
+    try {
+      const { error } = await supabase
+        .from('ranking_geral')
+        .insert({
+          piloto_nome: name,
+          total_pontos: 0,
+        });
+
+      if (error) throw error;
+
+      await get().loadData();
+    } catch (error) {
+      console.error('Erro ao adicionar piloto:', error);
+      set({ loading: false });
+      throw error;
+    }
+  },
+
+  updatePilot: async (oldName: string, newName: string) => {
+    set({ loading: true });
+    
+    try {
+      // Atualizar ranking_geral
+      const { error: rankingError } = await supabase
+        .from('ranking_geral')
+        .update({ piloto_nome: newName })
+        .eq('piloto_nome', oldName);
+
+      if (rankingError) throw rankingError;
+
+      // Atualizar resultados_corrida
+      const { error: resultadosError } = await supabase
+        .from('resultados_corrida')
+        .update({ piloto_nome: newName })
+        .eq('piloto_nome', oldName);
+
+      if (resultadosError) throw resultadosError;
+
+      await get().loadData();
+    } catch (error) {
+      console.error('Erro ao atualizar piloto:', error);
+      set({ loading: false });
+      throw error;
+    }
+  },
+
+  deletePilot: async (name: string) => {
+    set({ loading: true });
+    
+    try {
+      // Deletar do ranking_geral
+      const { error: rankingError } = await supabase
+        .from('ranking_geral')
+        .delete()
+        .eq('piloto_nome', name);
+
+      if (rankingError) throw rankingError;
+
+      // Deletar dos resultados_corrida
+      const { error: resultadosError } = await supabase
+        .from('resultados_corrida')
+        .delete()
+        .eq('piloto_nome', name);
+
+      if (resultadosError) throw resultadosError;
+
+      await get().loadData();
+    } catch (error) {
+      console.error('Erro ao deletar piloto:', error);
+      set({ loading: false });
+      throw error;
     }
   },
 

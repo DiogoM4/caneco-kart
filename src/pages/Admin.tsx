@@ -18,6 +18,9 @@ const Admin = () => {
     addRace, 
     updateRace, 
     deleteRace,
+    addPilot,
+    updatePilot,
+    deletePilot,
     loadData, 
     loading,
     calculatePointsForRace 
@@ -81,15 +84,25 @@ const Admin = () => {
     }
 
     try {
-      await addRace({
-        date: newRace.data,
-        results: pilots.map((pilot, index) => ({
-          pilotId: pilot.id,
-          position: index + 1
-        }))
+      // Fazer POST direto para o Supabase
+      const response = await fetch(`https://lrgexuudpodmvqyhpqzd.supabase.co/rest/v1/corridas`, {
+        method: 'POST',
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZ2V4dXVkcG9kbXZxeWhwcXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTk5MjUsImV4cCI6MjA2ODQzNTkyNX0.GKKe-M12WQfSGWo96M0J1t7QXueGEy4AsmohYbBQUyg',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZ2V4dXVkcG9kbXZxeWhwcXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTk5MjUsImV4cCI6MjA2ODQzNTkyNX0.GKKe-M12WQfSGWo96M0J1t7QXueGEy4AsmohYbBQUyg',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          nome: newRace.nome,
+          data: newRace.data,
+          local: newRace.local
+        })
       });
 
+      if (!response.ok) throw new Error('Erro ao criar corrida');
+
       setNewRace({ nome: '', data: '', local: '' });
+      await loadData();
       toast({
         title: "Sucesso",
         description: "Corrida criada com sucesso!"
@@ -166,24 +179,8 @@ const Admin = () => {
     }
 
     try {
-      // Adicionar à tabela ranking_geral via Supabase API
-      const response = await fetch(`https://lrgexuudpodmvqyhpqzd.supabase.co/rest/v1/ranking_geral`, {
-        method: 'POST',
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZ2V4dXVkcG9kbXZxeWhwcXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTk5MjUsImV4cCI6MjA2ODQzNTkyNX0.GKKe-M12WQfSGWo96M0J1t7QXueGEy4AsmohYbBQUyg',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZ2V4dXVkcG9kbXZxeWhwcXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTk5MjUsImV4cCI6MjA2ODQzNTkyNX0.GKKe-M12WQfSGWo96M0J1t7QXueGEy4AsmohYbBQUyg',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          piloto_nome: newPilotName.trim(),
-          total_pontos: 0
-        })
-      });
-
-      if (!response.ok) throw new Error('Erro ao adicionar piloto');
-
+      await addPilot(newPilotName.trim());
       setNewPilotName('');
-      await loadData();
       toast({
         title: "Sucesso",
         description: "Piloto adicionado com sucesso!"
@@ -197,33 +194,13 @@ const Admin = () => {
     }
   };
 
-  const handleDeletePilot = async (pilotName) => {
+  const handleDeletePilot = async (pilotName: string) => {
     if (!confirm(`Tem certeza que deseja remover o piloto ${pilotName}? Todos os dados relacionados serão perdidos.`)) {
       return;
     }
 
     try {
-      // Deletar do ranking_geral
-      await fetch(`https://lrgexuudpodmvqyhpqzd.supabase.co/rest/v1/ranking_geral?piloto_nome=eq.${encodeURIComponent(pilotName)}`, {
-        method: 'DELETE',
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZ2V4dXVkcG9kbXZxeWhwcXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTk5MjUsImV4cCI6MjA2ODQzNTkyNX0.GKKe-M12WQfSGWo96M0J1t7QXueGEy4AsmohYbBQUyg',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZ2V4dXVkcG9kbXZxeWhwcXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTk5MjUsImV4cCI6MjA2ODQzNTkyNX0.GKKe-M12WQfSGWo96M0J1t7QXueGEy4AsmohYbBQUyg',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      // Deletar dos resultados_corrida
-      await fetch(`https://lrgexuudpodmvqyhpqzd.supabase.co/rest/v1/resultados_corrida?piloto_nome=eq.${encodeURIComponent(pilotName)}`, {
-        method: 'DELETE',
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZ2V4dXVkcG9kbXZxeWhwcXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTk5MjUsImV4cCI6MjA2ODQzNTkyNX0.GKKe-M12WQfSGWo96M0J1t7QXueGEy4AsmohYbBQUyg',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZ2V4dXVkcG9kbXZxeWhwcXpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTk5MjUsImV4cCI6MjA2ODQzNTkyNX0.GKKe-M12WQfSGWo96M0J1t7QXueGEy4AsmohYbBQUyg',
-          'Content-Type': 'application/json'
-        }
-      });
-
-      await loadData();
+      await deletePilot(pilotName);
       toast({
         title: "Sucesso",
         description: "Piloto removido com sucesso!"
@@ -232,6 +209,25 @@ const Admin = () => {
       toast({
         title: "Erro",
         description: "Erro ao remover piloto",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditPilot = async (oldName: string, newName: string) => {
+    if (!newName.trim() || newName === oldName) return;
+
+    try {
+      await updatePilot(oldName, newName.trim());
+      setEditingPilots(prev => ({ ...prev, [oldName]: false }));
+      toast({
+        title: "Sucesso",
+        description: "Nome do piloto atualizado!"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar nome do piloto",
         variant: "destructive"
       });
     }
@@ -449,17 +445,41 @@ const Admin = () => {
                       className="w-4 h-4 rounded-full" 
                       style={{ backgroundColor: pilot.color }}
                     />
-                    <span className="text-white font-medium">{pilot.name}</span>
+                    {editingPilots[pilot.name] ? (
+                      <Input
+                        defaultValue={pilot.name}
+                        onBlur={(e) => handleEditPilot(pilot.name, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleEditPilot(pilot.name, e.currentTarget.value);
+                          }
+                        }}
+                        className="bg-white/10 border-white/20 text-white h-8 text-sm"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="text-white font-medium">{pilot.name}</span>
+                    )}
                   </div>
                   
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeletePilot(pilot.name)}
-                    className="bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingPilots(prev => ({ ...prev, [pilot.name]: !prev[pilot.name] }))}
+                      className="bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeletePilot(pilot.name)}
+                      className="bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
