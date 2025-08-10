@@ -120,18 +120,23 @@ const Admin = () => {
   const handleSaveResults = async () => {
     if (!selectedRaceId) return;
 
-    // Verificar se todas as posições foram preenchidas
-    const positions = Object.values(raceResults).filter(pos => pos !== '');
-    if (positions.length !== pilots.length) {
+    // Filtrar apenas pilotos com posições preenchidas
+    const filledResults = Object.entries(raceResults)
+      .filter(([pilotId, position]) => position !== '')
+      .map(([pilotId, position]) => ({ pilotId, position: parseInt(position as string) }));
+
+    // Verificar se há pelo menos um resultado
+    if (filledResults.length === 0) {
       toast({
         title: "Erro",
-        description: "Preencha a colocação de todos os pilotos",
+        description: "Preencha pelo menos a colocação de um piloto",
         variant: "destructive"
       });
       return;
     }
 
-    // Verificar se não há posições duplicadas
+    // Verificar se não há posições duplicadas entre os pilotos preenchidos
+    const positions = filledResults.map(r => r.position);
     const uniquePositions = new Set(positions);
     if (uniquePositions.size !== positions.length) {
       toast({
@@ -143,13 +148,8 @@ const Admin = () => {
     }
 
     try {
-      const results = pilots.map(pilot => ({
-        pilotId: pilot.id,
-        position: parseInt(raceResults[pilot.id])
-      }));
-
       const raceData = {
-        results,
+        results: filledResults,
         polePosition: polePosition || undefined,
         fastestLap: fastestLap || undefined
       };
